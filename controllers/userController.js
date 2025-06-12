@@ -6,7 +6,7 @@ exports.registerUser = async (req, res) => {
      console.log(">>> registerUser called");
     const { username, email, firstName, lastName, password, phoneno } = req.body;
 
-    // validation
+  
     if (!username || !email || !password || !phoneno) {
         return res.status(400).json({
             success: false,
