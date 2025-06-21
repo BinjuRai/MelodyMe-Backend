@@ -5,7 +5,6 @@ const { createUser,
 } = require("../../controllers/admin/usermanagement")
 const { authenticateUser, isAdmin } = require("../../middlewares/authorizedUser")
 
-// 5 common api route
 router.post(
     "/",
     createUser
@@ -13,21 +12,21 @@ router.post(
 
 router.get(
     "/",
-    authenticateUser, // next() goes to next getUser
+    authenticateUser, 
     isAdmin,
     getUsers
 )
 
 router.get(
-    "/:id", // req.params.id
+    "/:id", 
     getOneUser
 )
 router.put(
-    "/:id", // req.params.id
+    "/:id",
     updateOne
 )
 router.delete(
-    "/:id", // req.params.id
+    "/:id", 
     deleteOne
 )
 module.exports = router

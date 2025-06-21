@@ -3,7 +3,7 @@ const Lesson = require("../../models/admin/lessonContent")
 
 exports.createLesson = async (req, res) => {
     const { name, price, courseId, userId } = req.body
-    // validataion
+   
     if (!name || !price || !courseId || !userId) {
         return res.status(403).json(
             { success: false, message: "Missing field" }

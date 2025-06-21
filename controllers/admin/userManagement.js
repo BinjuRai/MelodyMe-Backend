@@ -1,11 +1,10 @@
 const User = require("../../models/User")
 const bcrypt = require("bcrypt")
 
-// 5 common api
-// Create, Read All, Read One, Update One, Delete One
+
 exports.createUser = async (req, res) => {
     const { username, email, firstName, lastName, password } = req.body
-    // validation
+    
     if (!username || !email || !password) {
         return res.status(400).json(
             {
@@ -14,7 +13,7 @@ exports.createUser = async (req, res) => {
             }
         )
     }
-    // db logic in try/catch
+   
     try {
         const existingUser = await User.findOne(
             {
@@ -30,10 +29,10 @@ exports.createUser = async (req, res) => {
                 }
             )
         }
-        // hash password
+        
         const hasedPas = await bcrypt.hash(
             password, 10
-        ) // 10 is complexity
+        ) 
         const newUser = new User({
             username,
             email,
@@ -55,7 +54,7 @@ exports.createUser = async (req, res) => {
     }
 }
 
-// 2 Get all/ Read All
+
 exports.getUsers = async (req, res ) => {
     try{
         const users = await User.find();
@@ -72,7 +71,7 @@ exports.getUsers = async (req, res ) => {
         )
     }
 }
-// 3 Get One/Read one
+
 exports.getOneUser = async (req, res) => {
     try{
         // unique identifier
@@ -96,7 +95,7 @@ exports.getOneUser = async (req, res) => {
     }
 }
 
-// 4 Update one
+
 exports.updateOne = async (req, res) => {
     const { username, firstName, lastName } = req.body
     const _id = req.params.id // mongodb id
@@ -123,7 +122,7 @@ exports.updateOne = async (req, res) => {
     }
 }
 
-// 5 Delete One
+
 exports.deleteOne = async (req, res) => {
     const _id = req.params.id
     try{
