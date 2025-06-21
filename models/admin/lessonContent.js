@@ -11,17 +11,16 @@ const LessonContentSchema = new mongoose.Schema(
             required: true
         },
         courseId: {
-            type: mongoose.Schema.ObjectId, // foreign key/referencing
+            type: mongoose.Schema.ObjectId, 
             ref: 'Courses',
             required: true
         },
         sellerId: {
-            type: mongoose.Schema.ObjectId, // foreign key/referencing
+            type: mongoose.Schema.ObjectId, 
             ref: 'User',
             required: true
         },
-        // task make a multer to storage product image 
-        // courseImage : { type: String }
+       
     }
 )
 
