@@ -3,13 +3,13 @@ const router = express.Router()
 const { createUser, 
     getUsers, getOneUser, updateOne, deleteOne
 } = require("../../controllers/admin/usermanagement")
+
 const { authenticateUser, isAdmin } = require("../../middlewares/authorizedUser")
 
 router.post(
     "/",
     createUser
 )
-
 router.get(
     "/",
     authenticateUser, 
