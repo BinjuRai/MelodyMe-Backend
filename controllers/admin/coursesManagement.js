@@ -1,7 +1,5 @@
 const Courses= require('../../models/admin/courses')
 
-
-// Create a new category
 exports.createCourse = async (req, res) => {
     try {
         const filename = req.file?.path
@@ -27,7 +25,6 @@ exports.getAllCourses = async (req, res) => {
     }
 };
 
-// Get single category by ID
 exports.getCoursesById = async (req, res) => {
     try {
         const courses = await Courses.findById(req.params.id);
@@ -61,7 +58,6 @@ exports.updateCourses = async (req, res) => {
     }
 };
 
-// Delete a category
 exports.deleteCourse = async (req, res) => {
     try {
         const result = await Courses.findByIdAndDelete(req.params.id);
