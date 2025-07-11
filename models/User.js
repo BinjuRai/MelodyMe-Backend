@@ -29,7 +29,16 @@ const UserSchema = new mongoose.Schema(
         role:{
             type:String,
             default:"normal"
+        },
+        filepath: {
+            type: String
         }
+//           wishlist: [
+//     {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "Lesson",
+//     },
+//   ],
     },
     {
         timestamps: true

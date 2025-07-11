@@ -3,7 +3,10 @@ const bcrypt = require("bcrypt")
 
 
 exports.createUser = async (req, res) => {
-    const { username, email, firstName, lastName, password } = req.body
+    const filename = req.file?.path
+    const { username, email, firstName, lastName, password, phoneno } = req.body
+    const user = new User({ name: req.body.name, filepath: filename });
+      await user.save();
     
     if (!username || !email || !password) {
         return res.status(400).json(
@@ -38,7 +41,9 @@ exports.createUser = async (req, res) => {
             email,
             firstName,
             lastName,
-            password: hasedPas
+            password: hasedPas,
+            phoneno,
+            filepath
         })
         await newUser.save()
         return res.status(201).json(
@@ -48,6 +53,7 @@ exports.createUser = async (req, res) => {
             }
         )
     } catch (err) {
+        console.log("create user error: ",err)
         return res.status(500).json(
             { "success": false, "message": "Server error" }
         )

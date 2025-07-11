@@ -2,7 +2,7 @@ const express = require("express")
 const router = express.Router()
 const { createUser, 
     getUsers, getOneUser, updateOne, deleteOne
-} = require("../../controllers/admin/usermanagement")
+} = require("../../controllers/admin/userManagement")
 
 const { authenticateUser, isAdmin } = require("../../middlewares/authorizedUser")
 

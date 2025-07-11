@@ -19,4 +19,5 @@ router.put('/:id',
     coursesController.updateCourses);
 router.delete('/:id', coursesController.deleteCourse);
 
+
 module.exports = router;

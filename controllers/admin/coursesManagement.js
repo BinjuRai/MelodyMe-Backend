@@ -1,9 +1,12 @@
-const Courses= require('../../models/admin/courses')
+const Courses= require('../../models/admin/courses');
+const lesson = require('../../models/admin/lesson');
+const mongoose = require('mongoose');
+
 
 exports.createCourse = async (req, res) => {
     try {
         const filename = req.file?.path
-
+        
         const course = new Courses({ name: req.body.name, filepath: filename });
         await course.save();
         return res.status(201).json({
@@ -28,9 +31,13 @@ exports.getAllCourses = async (req, res) => {
 exports.getCoursesById = async (req, res) => {
     try {
         const courses = await Courses.findById(req.params.id);
+const lessons = await lesson.find({ courseId: new mongoose.Types.ObjectId(req.params.id) });
+
+
         if (!courses) return res.status(404).json({ success: false, message: 'Courses not found' });
-        return res.json({ success: true, data: courses, message: "One courses" });
+        return res.json({ success: true, data: courses, lessons, message: "One courses" });
     } catch (err) {
+        console.log(err);
         return res.status(500).json({ success: false, message: "Server Error" });
     }
 };
@@ -67,3 +74,4 @@ exports.deleteCourse = async (req, res) => {
         return res.status(500).json({ success: false, message: "Server Error" });
     }
 };
+
