@@ -1,5 +1,5 @@
 const request = require("supertest");
-const app = require("../index"); // Assuming your Express app is exported from index.js
+const app = require("../index"); 
 const User = require("../models/User");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -124,7 +124,7 @@ describe("User Registration API", () => {
       firstName: "John",
       lastName: "Doe",
       username: "john123",
-      email: "ram@gmail.com", // duplicate email
+      email: "ram@gmail.com", 
       password: "password123",
       phoneno: 9841234569
     });
