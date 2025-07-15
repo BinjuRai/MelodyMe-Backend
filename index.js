@@ -41,7 +41,6 @@ app.get("/test", (req, res) => {
   res.send("Server is working!");
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports = app
+
 
