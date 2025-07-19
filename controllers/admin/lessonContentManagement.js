@@ -1,30 +1,50 @@
-
+const mongoose = require("mongoose");
 const Lesson = require("../../models/admin/lesson");
+const Course = require("../../models/admin/courses");
+const Notification = require("../../models/notification");
+const updateCourseTotalPrice = require('../../services/updateCourseTotalPrice');
 
-// CREATE LESSON
+
 exports.createLesson = async (req, res) => {
   try {
-    const { name, price, courseId, description, authorName, duration } =
-      req.body;
-    let imagepath, filepath;
-    if (req.files.image) {
-      imagepath = req.files.image[0].path;
-    }
-    if (req.files.file) {
-      filepath = req.files.file[0].path;
-    }
+    const { name, price, courseId, description, authorName, duration } = req.body;
     const userId = req.user._id;
 
-    if (!name || !price || !courseId || !userId) {
+    if (!name || !price || !courseId) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Missing required fields: name, price, courseId are required",
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID format",
+      });
+    }
+
+    const courseExists = await Course.findById(courseId);
+    if (!courseExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    let imagepath, filepath;
+    if (req.files?.image?.[0]) {
+      imagepath = req.files.image[0].path;
+    }
+    if (req.files?.file?.[0]) {
+      filepath = req.files.file[0].path;
+    }
+
+    const sanitizedPrice = parseFloat(price.toString().replace(/[^\d.]/g, ''));
+
     const lesson = new Lesson({
       name,
-      price,
+      price: sanitizedPrice,
       courseId,
       sellerId: userId,
       filepath,
@@ -33,14 +53,26 @@ exports.createLesson = async (req, res) => {
       authorName,
       duration,
     });
+    if (!lesson.courseId) {
+  return res.status(400).json({
+    success: false,
+    message: "courseId is required and must be valid",
+  });
+    }
 
     await lesson.save();
+
+    await updateCourseTotalPrice(courseId);
+
+    // ✅ Notify users
+    await notifyUsersAboutLesson(lesson, req.app);
 
     return res.status(201).json({
       success: true,
       message: "New lesson created successfully",
       data: lesson,
     });
+
   } catch (error) {
     console.error("Error creating lesson:", error);
     return res.status(500).json({
@@ -50,24 +82,74 @@ exports.createLesson = async (req, res) => {
   }
 };
 
+// ✅ Notification function inside the same file
+async function notifyUsersAboutLesson(lesson, app) {
+  try {
+    const users = await User.find({ enrolledCourses: lesson.courseId });
+
+    const io = app.get("io");
+    const connectedUsers = app.get("connectedUsers");
+
+    for (const user of users) {
+      const message = `New lesson "${lesson.name}" added to your course.`;
+
+      const notification = new Notification({
+        userId: user._id,
+        message,
+        courseId: lesson.courseId,
+        lessonId: lesson._id,
+      });
+
+      await notification.save();
+
+      const socketId = connectedUsers.get(user._id.toString());
+      if (socketId) {
+        io.to(socketId).emit("newNotification", {
+          message,
+          courseId: lesson.courseId,
+          lessonId: lesson._id,
+          createdAt: notification.createdAt,
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error notifying users:", error);
+  }
+}
+
+
+/**
+ * Get lessons with pagination and search
+ */
 exports.getLesson = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
-    const skips = (page - 1) * limit;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const search = req.query.search?.trim() || "";
+    const skip = (page - 1) * limit;
 
-    const filter = search
-      ? {
-          name: { $regex: search, $options: "i" },
-        }
-      : {};
+    // Build search filter
+    const filter = {};
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { authorName: { $regex: search, $options: "i" } },
+      ];
+    }
 
-    const lessons = await Lesson.find(filter)
-      .populate("courseId", "name")
-      .populate("sellerId", "firstName email")
-      .skip(Number(skips))
-      .limit(Number(limit));
+    // Fetch lessons with pagination and total count in parallel
+    const [lessons, total] = await Promise.all([
+      Lesson.find(filter)
+        .populate("courseId", "name")
+        .populate("sellerId", "firstName email")
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }),
+      Lesson.countDocuments(filter),
+    ]);
 
-    const total = await Lesson.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       success: true,
@@ -75,9 +157,11 @@ exports.getLesson = async (req, res) => {
       data: lessons,
       pagination: {
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
       },
     });
   } catch (error) {
@@ -88,9 +172,74 @@ exports.getLesson = async (req, res) => {
     });
   }
 };
+
+// exports.getLesson = async (req, res) => {
+//   try {
+//     const page = Math.max(1, parseInt(req.query.page) || 1);
+//     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+//     const search = req.query.search?.trim() || "";
+//     const skip = (page - 1) * limit;
+
+//     const filter = {};
+//     if (search) {
+//       filter.$or = [
+//         { name: { $regex: search, $options: "i" } },
+//         { description: { $regex: search, $options: "i" } },
+//         { authorName: { $regex: search, $options: "i" } },
+//       ];
+//     }
+
+//     console.log("Filter for lessons:", filter);
+
+//     const [lessons, total] = await Promise.all([
+//       Lesson.find(filter)
+//         .populate("courseId", "name")
+//         .populate("sellerId", "firstName email")
+//         .skip(skip)
+//         .limit(limit)
+//         .sort({ createdAt: -1 }),
+//       Lesson.countDocuments(filter),
+//     ]);
+
+//     console.log("Lessons fetched:", lessons.length);
+
+//     const totalPages = Math.ceil(total / limit);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Lessons fetched successfully",
+//       data: lessons,
+//       pagination: {
+//         total,
+//         page,
+//         limit,
+//         totalPages,
+//         hasNext: page < totalPages,
+//         hasPrev: page > 1,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching lessons:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server error while fetching lessons",
+//     });
+//   }
+// };
+/**
+ * Get lesson by ID
+ */
 exports.getLessonById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Validate lesson ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lesson ID format",
+      });
+    }
 
     const lesson = await Lesson.findById(id)
       .populate("courseId", "name")
@@ -117,51 +266,33 @@ exports.getLessonById = async (req, res) => {
   }
 };
 
-exports.deleteLesson = async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    const lesson = await Lesson.findByIdAndDelete(id);
 
-    if (!lesson) {
-      return res.status(404).json({
-        success: false,
-        message: "Lesson not found",
-      });
-    }
 
-    return res.status(200).json({
-      success: true,
-      message: "Lesson deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting lesson:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error while deleting lesson",
-    });
-  }
-};
+/**
+ * Update lesson
+ */
 exports.updateLesson = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Defensive check on req.body
     const {
       name,
       price,
       courseId,
-      userId,
       description,
       authorName,
-      duration
-    } = req.body || {};
+      duration,
+    } = req.body;
 
-    // Access files from multer
-    const imageFile = req.files?.image?.[0];
-    const otherFile = req.files?.file?.[0];
-    const filepath = otherFile?.path || req.body?.filepath;
+    // Validate lesson ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lesson ID format",
+      });
+    }
 
+    // Find existing lesson
     const lesson = await Lesson.findById(id);
     if (!lesson) {
       return res.status(404).json({
@@ -170,21 +301,63 @@ exports.updateLesson = async (req, res) => {
       });
     }
 
-    lesson.name = name || lesson.name;
-    lesson.price = price || lesson.price;
-    lesson.courseId = courseId || lesson.courseId;
-    lesson.sellerId = userId || lesson.sellerId;
-    lesson.filepath = filepath || lesson.filepath;
-    lesson.description = description || lesson.description
-    lesson.authorName = authorName || lesson.authorName;
-    lesson.duration = duration || lesson.duration;
+    const oldCourseId = lesson.courseId.toString();
 
-    // Optionally handle imageFile if needed
+    // Validate new courseId if changed
+    if (courseId && courseId !== oldCourseId) {
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid course ID format",
+        });
+      }
+
+      const courseExists = await Course.findById(courseId);
+      if (!courseExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Course not found",
+        });
+      }
+    }
+
+    // Handle file uploads
+    const imageFile = req.files?.image?.[0];
+    const otherFile = req.files?.file?.[0];
+    const filepath = otherFile?.path || lesson.filepath; // fallback to old filepath
+
+    // Update fields if provided
+    if (name !== undefined) lesson.name = name;
+
+    if (price !== undefined) {
+      const sanitizedPrice = parseFloat(price.toString().replace(/[^\d.]/g, ''));
+      lesson.price = sanitizedPrice;
+    }
+
+    if (courseId !== undefined) lesson.courseId = courseId;
+    
+    // Always use the authenticated user as seller
+    lesson.sellerId = req.user._id;
+
+    lesson.filepath = filepath;
+
+    if (description !== undefined) lesson.description = description;
+    if (authorName !== undefined) lesson.authorName = authorName;
+    if (duration !== undefined) lesson.duration = duration;
+
     if (imageFile) {
-      lesson.imagePath = imageFile.path; // or however you store it
+      lesson.imagepath = imageFile.path;
     }
 
     await lesson.save();
+
+    // Update total prices of old and new courses if course changed
+    const coursesToUpdate = [lesson.courseId.toString()];
+    if (courseId && courseId !== oldCourseId) {
+      coursesToUpdate.push(oldCourseId);
+    }
+
+    await Promise.all(coursesToUpdate.map(cId => updateCourseTotalPrice(cId)));
 
     return res.status(200).json({
       success: true,
@@ -199,3 +372,100 @@ exports.updateLesson = async (req, res) => {
     });
   }
 };
+
+/**
+ * Delete lesson
+ */
+exports.deleteLesson = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate lesson ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lesson ID format",
+      });
+    }
+
+    // Delete lesson document
+    const lesson = await Lesson.findByIdAndDelete(id);
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: "Lesson not found",
+      });
+    }
+
+    // Update course total price after deletion
+    await updateCourseTotalPrice(lesson.courseId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Lesson deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting lesson:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting lesson",
+    });
+  }
+};
+
+// const getAllLessons = async (req, res) => {
+//   try {
+//     // Add error handling and filtering for invalid data
+//     const lessons = await Lesson.find({})
+//       .populate('courseId', 'name') // Only populate if courseId exists
+//       .populate('sellerId', 'firstName email')
+//       .lean(); // Use lean() for better performance
+
+//     // Filter out lessons with null courseId or handle them appropriately
+//     const validLessons = lessons.filter(lesson => {
+//       if (!lesson.courseId) {
+//         console.warn(`Found lesson without courseId: ${lesson._id}`);
+//         return false; // Exclude from results
+//       }
+//       return true;
+//     });
+
+//     // Log the invalid lessons count
+//     const invalidCount = lessons.length - validLessons.length;
+//     if (invalidCount > 0) {
+//       console.warn(`Filtered out ${invalidCount} lessons with invalid courseId`);
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: validLessons,
+//       total: validLessons.length,
+//       filtered: invalidCount
+//     });
+
+//   } catch (error) {
+//     console.error('Get lessons error:', error);
+    
+//     // More specific error handling
+//     if (error.name === 'CastError') {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid data format in database'
+//       });
+//     }
+
+//     if (error.name === 'ValidationError') {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Data validation failed'
+//       });
+//     }
+
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch lessons',
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// };
+

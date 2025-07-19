@@ -4,12 +4,19 @@ const { createUser,
     getUsers, getOneUser, updateOne, deleteOne
 } = require("../../controllers/admin/userManagement")
 
-const { authenticateUser, isAdmin } = require("../../middlewares/authorizedUser")
+
+const { authenticateUser, isAdmin  } = require("../../middlewares/authorizedUser");
+
+
+
 
 router.post(
-    "/",
+    "/", 
     createUser
 )
+
+
+
 router.get(
     "/",
     authenticateUser, 

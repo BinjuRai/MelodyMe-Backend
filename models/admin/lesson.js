@@ -28,6 +28,7 @@ const LessonSchema = new mongoose.Schema(
       ref: 'Courses',
       required: true
     },
+
     sellerId: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',
