@@ -3,6 +3,8 @@ const router = express.Router()
 const { createUser, 
     getUsers, getOneUser, updateOne, deleteOne
 } = require("../../controllers/admin/userManagement")
+const multer = require("multer");
+const upload = multer({ dest: 'uploads/' })
 
 
 const { authenticateUser, isAdmin  } = require("../../middlewares/authorizedUser");
@@ -10,10 +12,11 @@ const { authenticateUser, isAdmin  } = require("../../middlewares/authorizedUser
 
 
 
-router.post(
-    "/", 
-    createUser
-)
+// router.post(
+//     "/", 
+//     createUser
+// )
+router.post("/", upload.single('image'), createUser);
 
 
 

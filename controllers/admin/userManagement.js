@@ -3,63 +3,101 @@ const bcrypt = require("bcrypt")
 const Payment = require("../../models/payment");
 
 
-exports.createUser = async (req, res) => {
-    const filename = req.file?.path
-    const { username, email, firstName, lastName, password, phoneno } = req.body
-    const user = new User({ name: req.body.name, filepath: filename });
-      await user.save();
+// exports.createUser = async (req, res) => {
+//     const filename = req.file?.path
+//     const { username, email, firstName, lastName, password, phoneno } = req.body
+//     const user = new User({ name: req.body.name, filepath: filename });
+//       await user.save();
     
-    if (!username || !email || !password) {
-        return res.status(400).json(
-            {
-                "success": false,
-                "message": "Missing fields"
-            }
-        )
-    }
+//     if (!username || !email || !password) {
+//         return res.status(400).json(
+//             {
+//                 "success": false,
+//                 "message": "Missing fields"
+//             }
+//         )
+//     }
    
-    try {
-        const existingUser = await User.findOne(
-            {
-                $or: [{ "username": username },
-                { "email": email }]
-            }
-        )
-        if (existingUser) {
-            return res.status(400).json(
-                {
-                    "success": false,
-                    "message": "User exists"
-                }
-            )
-        }
+//     try {
+//         const existingUser = await User.findOne(
+//             {
+//                 $or: [{ "username": username },
+//                 { "email": email }]
+//             }
+//         )
+//         if (existingUser) {
+//             return res.status(400).json(
+//                 {
+//                     "success": false,
+//                     "message": "User exists"
+//                 }
+//             )
+//         }
         
-        const hasedPas = await bcrypt.hash(
-            password, 10
-        ) 
-        const newUser = new User({
-            username,
-            email,
-            firstName,
-            lastName,
-            password: hasedPas,
-            phoneno,
-            filepath
-        })
-        await newUser.save()
-        return res.status(201).json(
-            {
-                "success": true,
-                "message": "User Registered"
-            }
-        )
-    } catch (err) {
-        console.log("create user error: ",err)
-        return res.status(500).json(
-            { "success": false, "message": "Server error" }
-        )
+//         const hasedPas = await bcrypt.hash(
+//             password, 10
+//         ) 
+//         const newUser = new User({
+//             username,
+//             email,
+//             firstName,
+//             lastName,
+//             password: hasedPas,
+//             phoneno,
+//             filepath:filename
+//         })
+//         await newUser.save()
+//         return res.status(201).json(
+//             {
+//                 "success": true,
+//                 "message": "User Registered"
+//             }
+//         )
+//     } catch (err) {
+//         console.log("create user error: ",err)
+//         return res.status(500).json(
+//             { "success": false, "message": "Server error" }
+//         )
+//     }
+// }
+exports.createUser = async (req, res) => {
+  try {
+    const filename = req.file?.path;
+    const { username, email, firstName, lastName, password, phoneno } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ success: false, message: "Missing fields" });
     }
-}
+
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "User exists" });
+    }
+
+    const hashedPass = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      username,
+      email,
+      firstName,
+      lastName,
+      password: hashedPass,
+      phoneno,
+      filepath: filename,
+    });
+
+    await newUser.save();
+
+    return res.status(201).json({ success: true, message: "User Registered" });
+  } catch (err) {
+    console.error("create user error: ", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 
 exports.getUsers = async (req, res ) => {

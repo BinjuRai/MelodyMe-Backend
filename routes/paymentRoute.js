@@ -7,6 +7,12 @@ const userManagement = require('../controllers/admin/userManagement')
 router.post("/", paymentController.createPayment)
 router.get("/", userManagement.getUsersWithPayments);
 
+router.get("/all", paymentController.getAllPayments);        // Get all payments
+router.get("/:id", paymentController.getPaymentById);        // Get payment by ID
+router.put("/:id", paymentController.updatePayment);         // Update payment by ID
+router.delete("/:id", paymentController.deletePayment);      // Delete payment by ID
+
+
 
 module.exports = router;
 
