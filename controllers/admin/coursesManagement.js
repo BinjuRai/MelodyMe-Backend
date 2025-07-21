@@ -78,7 +78,6 @@ exports.deleteCourse = async (req, res) => {
     }
 };
 
-
 exports.getLessonsByCourseId = async (req, res) => {
   try {
     const { id } = req.params;
@@ -91,10 +90,10 @@ exports.getLessonsByCourseId = async (req, res) => {
       });
     }
 
-    // Find lessons and sort them (e.g., by order or createdAt)
+    // Find and sort lessons by 'order'
     const lessons = await Lesson.find({ 
       courseId: new mongoose.Types.ObjectId(id) 
-    }).sort({ order: 1 }); // or sort by another field like createdAt
+    }).sort({ order: 1 });
 
     if (!lessons || lessons.length === 0) {
       return res.status(404).json({ 
@@ -103,14 +102,19 @@ exports.getLessonsByCourseId = async (req, res) => {
       });
     }
 
-    // Optionally transform the data before sending
+    // Transform lessons
     const transformedLessons = lessons.map(lesson => ({
       id: lesson._id,
       title: lesson.title,
+      name: lesson.name,
       duration: lesson.duration,
-      // include other fields you need
+      authorName: lesson.authorName,
+      price: lesson.price, // fixed
+      description: lesson.description,
+      imagepath: lesson.imagepath,
+      filepath: lesson.filepath,
       createdAt: lesson.createdAt,
-      updatedAt: lesson.updatedAt
+      updatedAt: lesson.updatedAt,
     }));
 
     res.status(200).json({ 
@@ -129,6 +133,7 @@ exports.getLessonsByCourseId = async (req, res) => {
     });
   }
 };
+
 
 // exports.getLessonsByCourseId = async (req, res) => {
 //   try {

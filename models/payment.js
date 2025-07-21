@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
-
 const PaymentSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
+  },
+  username: {
+    type: String,
+    required: false,
   },
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -14,7 +17,7 @@ const PaymentSchema = new mongoose.Schema({
   lessonId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Lesson",
-    required: false, // optional, only when paying for a single lesson
+    required: false,
   },
   pricePaid: {
     type: Number,
@@ -22,7 +25,7 @@ const PaymentSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    default: "unknown", // optional, e.g., "credit_card", "paypal"
+    default: "unknown",
   },
   paymentStatus: {
     type: String,

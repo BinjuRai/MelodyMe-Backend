@@ -150,7 +150,7 @@ exports.getLesson = async (req, res) => {
     ]);
 
     const totalPages = Math.ceil(total / limit);
-
+    console.log("lesson ready to return")
     return res.status(200).json({
       success: true,
       message: "Lessons fetched successfully",
@@ -232,9 +232,10 @@ exports.getLesson = async (req, res) => {
 exports.getLessonById = async (req, res) => {
   try {
     const { id } = req.params;
-
+     console.log("Received request for lesson ID:", id);
     // Validate lesson ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
+            console.log("Invalid lesson ID format:", id);
       return res.status(400).json({
         success: false,
         message: "Invalid lesson ID format",
@@ -246,6 +247,7 @@ exports.getLessonById = async (req, res) => {
       .populate("sellerId", "firstName email");
 
     if (!lesson) {
+       console.log("Lesson not found in DB for ID:", id);
       return res.status(404).json({
         success: false,
         message: "Lesson not found",

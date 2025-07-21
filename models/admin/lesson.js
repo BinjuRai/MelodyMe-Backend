@@ -24,13 +24,13 @@ const LessonSchema = new mongoose.Schema(
       required: true
     },
     courseId: {
-      type: mongoose.Schema.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Courses',
       required: true
     },
 
     sellerId: {
-      type: mongoose.Schema.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
