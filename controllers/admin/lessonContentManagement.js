@@ -173,59 +173,7 @@ exports.getLesson = async (req, res) => {
   }
 };
 
-// exports.getLesson = async (req, res) => {
-//   try {
-//     const page = Math.max(1, parseInt(req.query.page) || 1);
-//     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
-//     const search = req.query.search?.trim() || "";
-//     const skip = (page - 1) * limit;
 
-//     const filter = {};
-//     if (search) {
-//       filter.$or = [
-//         { name: { $regex: search, $options: "i" } },
-//         { description: { $regex: search, $options: "i" } },
-//         { authorName: { $regex: search, $options: "i" } },
-//       ];
-//     }
-
-//     console.log("Filter for lessons:", filter);
-
-//     const [lessons, total] = await Promise.all([
-//       Lesson.find(filter)
-//         .populate("courseId", "name")
-//         .populate("sellerId", "firstName email")
-//         .skip(skip)
-//         .limit(limit)
-//         .sort({ createdAt: -1 }),
-//       Lesson.countDocuments(filter),
-//     ]);
-
-//     console.log("Lessons fetched:", lessons.length);
-
-//     const totalPages = Math.ceil(total / limit);
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Lessons fetched successfully",
-//       data: lessons,
-//       pagination: {
-//         total,
-//         page,
-//         limit,
-//         totalPages,
-//         hasNext: page < totalPages,
-//         hasPrev: page > 1,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Error fetching lessons:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Server error while fetching lessons",
-//     });
-//   }
-// };
 /**
  * Get lesson by ID
  */
@@ -414,60 +362,4 @@ exports.deleteLesson = async (req, res) => {
     });
   }
 };
-
-// const getAllLessons = async (req, res) => {
-//   try {
-//     // Add error handling and filtering for invalid data
-//     const lessons = await Lesson.find({})
-//       .populate('courseId', 'name') // Only populate if courseId exists
-//       .populate('sellerId', 'firstName email')
-//       .lean(); // Use lean() for better performance
-
-//     // Filter out lessons with null courseId or handle them appropriately
-//     const validLessons = lessons.filter(lesson => {
-//       if (!lesson.courseId) {
-//         console.warn(`Found lesson without courseId: ${lesson._id}`);
-//         return false; // Exclude from results
-//       }
-//       return true;
-//     });
-
-//     // Log the invalid lessons count
-//     const invalidCount = lessons.length - validLessons.length;
-//     if (invalidCount > 0) {
-//       console.warn(`Filtered out ${invalidCount} lessons with invalid courseId`);
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       data: validLessons,
-//       total: validLessons.length,
-//       filtered: invalidCount
-//     });
-
-//   } catch (error) {
-//     console.error('Get lessons error:', error);
-    
-//     // More specific error handling
-//     if (error.name === 'CastError') {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Invalid data format in database'
-//       });
-//     }
-
-//     if (error.name === 'ValidationError') {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Data validation failed'
-//       });
-//     }
-
-//     res.status(500).json({
-//       success: false,
-//       message: 'Failed to fetch lessons',
-//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
-//     });
-//   }
-// };
 

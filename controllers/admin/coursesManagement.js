@@ -30,19 +30,7 @@ exports.getAllCourses = async (req, res) => {
     }
 };
 
-// exports.getCoursesById = async (req, res) => {
-//     try {
-//         const courses = await Courses.findById(req.params.id);
-//         const lessons = await lesson.find({ courseId: new mongoose.Types.ObjectId(req.params.id) });
 
-
-//         if (!courses) return res.status(404).json({ success: false, message: 'Courses not found' });
-//         return res.json({ success: true, data: courses, lessons, message: "One courses" });
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(500).json({ success: false, message: "Server Error" });
-//     }
-// };
 
 // Update a category
 exports.updateCourses = async (req, res) => {
@@ -134,96 +122,6 @@ exports.getLessonsByCourseId = async (req, res) => {
   }
 };
 
-
-// exports.getLessonsByCourseId = async (req, res) => {
-//   try {
-//     const courseId = req.params.id;
-
-//     const courseLessons = await lessons.find({ courseId });
-
-    
-
-//     if (!courseLessons.length) {
-//       return res.status(404).json({ message: 'No lessons found for this course' });
-//     }
-
-//     res.status(200).json(courseLessons);
-//   } catch (error) {
-//     console.error("Error fetching lessons by courseId:", error);
-//     res.status(500).json({ message: 'Server error', error: error.message });
-//   }
-// };
-
-// exports.getCoursesById = async (req, res) => {
-//     try {
-//         const courseId = req.params.id;
-//         const course = await Courses.findById(courseId);
-
-          
-// const lessons = await lesson.find({ courseId: new mongoose.Types.ObjectId(req.params.id) });
-
-
-//         if (!courses) return res.status(404).json({ success: false, message: 'Courses not found' });
-//         return res.json({ success: true, data: courses, lessons, message: "One courses" });
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(500).json({ success: false, message: "Server Error" });
-    
-
-//         if (!course) {
-//             return res.status(404).json({ success: false, message: 'Course not found' });
-//         }
-
-//         // Aggregate lessons to get totalPrice, authors, and durations
-//         const aggregation = await lessons.aggregate([
-//             { $match: { courseId: new mongoose.Types.ObjectId(courseId) } },
-//             {
-//                 $group: {
-//                     _id: "$courseId",
-//                     totalPrice: { $sum: "$price" },
-//                     authorNames: { $addToSet: "$authorName" },
-//                     totalDuration: { $push: "$duration" }
-//                 }
-//             }
-//         ]);
-
-//         const lessonData = aggregation[0] || {
-//             totalPrice: 0,
-//             authorNames: [],
-//             totalDuration: []
-//         };
-
-//         // Calculate total duration from string durations like "1h 20m"
-//         const totalMinutes = lessonData.totalDuration.reduce((acc, curr) => {
-//             if (!curr) return acc;
-//             let hours = 0, minutes = 0;
-
-//             const hMatch = curr.match(/(\d+)\s*h/);
-//             const mMatch = curr.match(/(\d+)\s*m/);
-
-//             if (hMatch) hours = parseInt(hMatch[1]);
-//             if (mMatch) minutes = parseInt(mMatch[1]);
-
-//             return acc + hours * 60 + minutes;
-//         }, 0);
-
-//         const formattedDuration = `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
-
-//         return res.json({
-//             success: true,
-//             data: {
-//                 course,
-//                 totalPrice: lessonData.totalPrice,
-//                 authors: lessonData.authorNames,
-//                 totalDuration: formattedDuration
-//             },
-//             message: "One course with aggregated lesson data"
-//         });
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(500).json({ success: false, message: "Server Error" });
-//     }
-// };
 
 exports.getCoursesById = async (req, res) => {
     try {

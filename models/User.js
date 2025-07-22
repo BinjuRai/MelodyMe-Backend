@@ -33,12 +33,7 @@ const UserSchema = new mongoose.Schema(
         filepath: {
             type: String
         }
-//           wishlist: [
-//     {
-//       type: mongoose.Schema.Types.ObjectId,
-//       ref: "Lesson",
-//     },
-//   ],
+
     },
     {
         timestamps: true

@@ -12,10 +12,7 @@ const { authenticateUser, isAdmin  } = require("../../middlewares/authorizedUser
 
 
 
-// router.post(
-//     "/", 
-//     createUser
-// )
+
 router.post("/", upload.single('image'), createUser);
 
 
