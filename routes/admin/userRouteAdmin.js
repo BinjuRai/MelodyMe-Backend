@@ -12,7 +12,6 @@ const { authenticateUser, isAdmin  } = require("../../middlewares/authorizedUser
 
 
 
-
 router.post("/", upload.single('image'), createUser);
 
 
@@ -36,4 +35,6 @@ router.delete(
     "/:id", 
     deleteOne
 )
+
+
 module.exports = router

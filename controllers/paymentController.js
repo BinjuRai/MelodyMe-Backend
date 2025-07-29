@@ -1,3 +1,5 @@
+
+
 const Payment = require("../models/payment"); // Adjust path if needed
 const Courses = require("../models/admin/courses");
 const Lesson = require("../models/admin/lesson");
@@ -178,3 +180,148 @@ exports.getUsersWithPayments = async (req, res) => {
     res.status(500).json({ message: "Server error fetching users with payments" });
   }
 };
+
+// Get payments by user ID
+exports.getPaymentsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const payments = await Payment.find({ userId })
+      .populate("courseId", "title")
+      .populate("lessonId", "title price")
+      .sort({ createdAt: -1 });
+
+    if (!payments.length) {
+      return res.status(404).json({ message: "No payments found for this user" });
+    }
+
+    res.json({ userId, totalPayments: payments.length, payments });
+  } catch (error) {
+    console.error("Error fetching user payments:", error);
+    res.status(500).json({ message: "Server error fetching user payments" });
+  }
+};
+
+
+// Get completed payments (courses or lessons) for a user
+// exports.getCompletedPaymentsForUser = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     if (!userId) {
+//       return res.status(400).json({ message: "User ID is required" });
+//     }
+
+//     const completedPayments = await Payment.find({
+//       userId,
+//       paymentStatus: "completed",
+//     })
+//       .populate("courseId", "title description thumbnail")
+//       .populate("lessonId", "title price");
+
+//     const paidCourses = completedPayments
+//       .filter(payment => payment.courseId && !payment.lessonId)
+//       .map(payment => payment.courseId);
+
+//     const paidLessons = completedPayments
+//       .filter(payment => payment.lessonId)
+//       .map(payment => ({
+//         course: payment.courseId,
+//         lesson: payment.lessonId,
+//       }));
+
+//     res.json({
+//       userId,
+//       courses: paidCourses,
+//       lessons: paidLessons,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching completed payments:", error);
+//     res.status(500).json({ message: "Server error fetching completed payments" });
+//   }
+// };
+
+exports.getCompletedPaymentsForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const completedPayments = await Payment.find({
+      userId,
+      paymentStatus: "completed",
+    })
+      .populate("courseId", "name filepath")
+      .populate("lessonId", "name imagepath autherName");
+
+    // Extract paid courses (no lessonId)
+    const uniqueCoursesMap = new Map();
+    completedPayments.forEach(payment => {
+      if (payment.courseId && !payment.lessonId) {
+        const course = payment.courseId;
+        uniqueCoursesMap.set(course._id.toString(), {
+          _id: course._id,
+          name: course.name|| "Untitled name", // frontend expects `name`
+          price: course.totalPrice || 0,
+          filepath: course.filepath || "",
+        });
+      }
+    });
+
+    // Extract paid lessons (with lessonId)
+    const paidLessons = completedPayments
+      .filter(payment => payment.lessonId)
+      .map(payment => ({
+        course: payment.courseId ? {
+          _id: payment.courseId._id,
+          name: payment.courseId.name|| "Untitled name",
+          filepath: payment.courseId.filepath || "",
+          price: payment.courseId.price || 0,
+        } : null,
+        lesson: {
+          _id: payment.lessonId._id,
+          title: payment.lessonId.name || "Untitled name",
+          imagepath: payment.lessonId.imagepath || "",
+          authorName: payment.lessonId.authorName || "Unknown Author",
+          price: payment.lessonId.price || 0,
+        },
+      }));
+
+    res.json({
+      userId,
+      courses: Array.from(uniqueCoursesMap.values()),
+      lessons: paidLessons,
+    });
+  } catch (error) {
+    console.error("Error fetching completed payments:", error);
+    res.status(500).json({ message: "Server error fetching completed payments" });
+  }
+};
+
+
+//userside
+
+// exports.getPaymentSummary = async (req, res) => {
+//   try {
+//     const summary = await Payment.aggregate([
+//       { $match: { paymentStatus: "completed" } },
+//       {
+//         $group: {
+//           _id: null,
+//           totalPayments: { $sum: 1 },
+//           totalAmount: { $sum: "$pricePaid" } // FIXED
+//         }
+//       }
+//     ]);
+
+//     res.json(summary[0] || { totalPayments: 0, totalAmount: 0 });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error fetching payment summary" });
+//   }
+// };
